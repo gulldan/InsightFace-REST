@@ -131,12 +131,14 @@ class FaceAnalysis:
         else:
             self.ga_model = None
 
-    def sort_boxes(self, boxes, probs, landmarks, img):
+    @staticmethod
+    def sort_boxes(boxes, probs, landmarks, img):
         # TODO implement sorting of bounding boxes with respect to size and position
         return boxes, probs, landmarks
 
     # Translate bboxes and landmarks from resized to original image size
-    def reproject_points(self, dets, scale: float):
+    @staticmethod
+    def reproject_points(dets, scale: float):
         if scale != 1.0:
             dets = dets / scale
         return dets
