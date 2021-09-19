@@ -206,7 +206,7 @@ class MXNetGraph(object):
         # name is "Softmax", this node will have a name "Softmax_label". Also, the new node
         # will always be second last node in the json graph.
         # Deriving the output_label name.
-        output_label = sym.get_internals()[len(sym.get_internals()) - 1].name + "_label"
+        output_label = sym.get_internals()[-1].name + "_label"
 
         weights = MXNetGraph.convert_weights_to_numpy(params)
 
