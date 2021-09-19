@@ -1062,7 +1062,7 @@ def convert_leakyrelu(node, **kwargs):
     slope_op_name = 'slope' + str(kwargs["idx"])
 
     lr_node = []
-    if act_type == "prelu" or act_type == "selu":
+    if act_type in ["prelu","selu"]:
         reshape_slope_node = onnx.helper.make_node(
             'Reshape',
             inputs=[input_nodes[1], reshape_val_name],
