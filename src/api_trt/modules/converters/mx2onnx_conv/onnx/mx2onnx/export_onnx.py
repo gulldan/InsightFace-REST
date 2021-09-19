@@ -156,8 +156,8 @@ class MXNetGraph(object):
     @staticmethod
     def convert_weights_to_numpy(weights_dict):
         """Convert weights to numpy"""
-        return dict([(k.replace("arg:", "").replace("aux:", ""), v.asnumpy())
-                     for k, v in weights_dict.items()])
+        return {k.replace("arg:", "").replace("aux:", ""): v.asnumpy()
+                     for k, v in weights_dict.items()}
 
     def create_onnx_graph_proto(self, sym, params, in_shape, in_type, verbose=False):
         """Convert MXNet graph to ONNX graph
