@@ -219,8 +219,8 @@ class FaceAnalysis:
             logging.debug(f'Cropping {len(boxes)} faces took: {t1 - t0}')
 
             # Process detected faces
-            faces = [e for e in self.process_faces(faces, extract_embedding=extract_embedding,
-                                                   extract_ga=extract_ga, return_face_data=return_face_data)]
+            faces = list(self.process_faces(faces, extract_embedding=extract_embedding,
+                                                   extract_ga=extract_ga, return_face_data=return_face_data))
 
         tf = time.time()
         logging.debug(f'Full processing took: {tf - ts}')
