@@ -24,10 +24,10 @@ def retinaface_mnet025_v2(model_path, backend, outputs):
     model = get_retinaface(model_path, backend, outputs, rac="net3l")
     return model
 
+
 def mnet_cov2(model_path, backend, outputs):
     model = get_retinaface(model_path, backend, outputs, rac="net3l", masks=True)
     return model
-
 
 
 def centerface(model_path, backend, outputs):
@@ -35,10 +35,8 @@ def centerface(model_path, backend, outputs):
     model = CenterFace(inference_backend=inference_backend)
     return model
 
+
 def dbface(model_path, backend, outputs):
     inference_backend = backend.DetectorInfer(model=model_path, output_order=outputs)
     model = DBFace(inference_backend=inference_backend)
     return model
-
-
-

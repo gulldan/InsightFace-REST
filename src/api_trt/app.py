@@ -28,28 +28,32 @@ configs = EnvConfigs()
 
 logging.basicConfig(
     level=configs.log_level,
-    format='%(asctime)s %(levelname)s - %(message)s',
-    datefmt='[%H:%M:%S]',
+    format="%(asctime)s %(levelname)s - %(message)s",
+    datefmt="[%H:%M:%S]",
 )
 
-processing = Processing(det_name=configs.models.det_name, rec_name=configs.models.rec_name,
-                        ga_name=configs.models.ga_name,
-                        device=configs.models.device,
-                        max_size=configs.defaults.max_size,
-                        max_rec_batch_size=configs.models.rec_batch_size,
-                        backend_name=configs.models.backend_name,
-                        force_fp16=configs.models.fp16,
-                        triton_uri=configs.models.triton_uri)
+processing = Processing(
+    det_name=configs.models.det_name,
+    rec_name=configs.models.rec_name,
+    ga_name=configs.models.ga_name,
+    device=configs.models.device,
+    max_size=configs.defaults.max_size,
+    max_rec_batch_size=configs.models.rec_batch_size,
+    backend_name=configs.models.backend_name,
+    force_fp16=configs.models.fp16,
+    triton_uri=configs.models.triton_uri,
+)
 
 app = FastAPI(
     title="InsightFace-REST",
     description="FastAPI wrapper for InsightFace API.",
     version=__version__,
     docs_url=None,
-    redoc_url=None
+    redoc_url=None,
 )
 
-@app.post('/extract', tags=['Detection & recognition'])
+
+@app.post("/extract", tags=["Detection & recognition"])
 async def extract(data: BodyExtract):
     """
     Face extraction/embeddings endpoint accept json with
@@ -71,15 +75,23 @@ async def extract(data: BodyExtract):
        List[List[dict]]
     """
     images = jsonable_encoder(data.images)
-    output = await processing.extract(images, max_size=data.max_size, return_face_data=data.return_face_data,
-                                      embed_only=data.embed_only, extract_embedding=data.extract_embedding,
-                                      threshold=data.threshold, extract_ga=data.extract_ga,
-                                      limit_faces=data.limit_faces, return_landmarks=data.return_landmarks,
-                                      verbose_timings=data.verbose_timings, api_ver=data.api_ver)
+    output = await processing.extract(
+        images,
+        max_size=data.max_size,
+        return_face_data=data.return_face_data,
+        embed_only=data.embed_only,
+        extract_embedding=data.extract_embedding,
+        threshold=data.threshold,
+        extract_ga=data.extract_ga,
+        limit_faces=data.limit_faces,
+        return_landmarks=data.return_landmarks,
+        verbose_timings=data.verbose_timings,
+        api_ver=data.api_ver,
+    )
     return UJSONResponse(output)
 
 
-@app.post('/draw_detections', tags=['Detection & recognition'])
+@app.post("/draw_detections", tags=["Detection & recognition"])
 async def draw(data: BodyDraw):
     """
     Return image with drawn faces for testing purposes.
@@ -94,16 +106,27 @@ async def draw(data: BodyDraw):
     """
 
     images = jsonable_encoder(data.images)
-    output = await processing.draw(images, threshold=data.threshold,
-                                   draw_landmarks=data.draw_landmarks, draw_scores=data.draw_scores,
-                                   limit_faces=data.limit_faces, draw_sizes=data.draw_sizes)
+    output = await processing.draw(
+        images,
+        threshold=data.threshold,
+        draw_landmarks=data.draw_landmarks,
+        draw_scores=data.draw_scores,
+        limit_faces=data.limit_faces,
+        draw_sizes=data.draw_sizes,
+    )
     output.seek(0)
     return StreamingResponse(output, media_type="image/png")
 
 
-@app.post('/multipart/draw_detections', tags=['Detection & recognition'])
-async def draw_upl(file: bytes = File(...), threshold: float = Form(0.6), draw_landmarks: bool = Form(True),
-                   draw_scores: bool = Form(True), draw_sizes: bool = Form(True), limit_faces: int = Form(0)):
+@app.post("/multipart/draw_detections", tags=["Detection & recognition"])
+async def draw_upl(
+    file: bytes = File(...),
+    threshold: float = Form(0.6),
+    draw_landmarks: bool = Form(True),
+    draw_scores: bool = Form(True),
+    draw_sizes: bool = Form(True),
+    limit_faces: int = Form(0),
+):
     """
     Return image with drawn faces for testing purposes.
 
@@ -116,15 +139,20 @@ async def draw_upl(file: bytes = File(...), threshold: float = Form(0.6), draw_l
        \f
     """
 
-    output = await processing.draw(file, threshold=threshold,
-                                   draw_landmarks=draw_landmarks, draw_scores=draw_scores, draw_sizes=draw_sizes,
-                                   limit_faces=limit_faces,
-                                   multipart=True)
+    output = await processing.draw(
+        file,
+        threshold=threshold,
+        draw_landmarks=draw_landmarks,
+        draw_scores=draw_scores,
+        draw_sizes=draw_sizes,
+        limit_faces=limit_faces,
+        multipart=True,
+    )
     output.seek(0)
-    return StreamingResponse(output, media_type='image/jpg')
+    return StreamingResponse(output, media_type="image/jpg")
 
 
-@app.get('/info', tags=['Utility'])
+@app.get("/info", tags=["Utility"])
 def info():
     """
     Enslist container configuration.
@@ -133,18 +161,18 @@ def info():
 
     about = dict(
         version=__version__,
-        tensorrt_version=os.getenv('TRT_VERSION', os.getenv('TENSORRT_VERSION')),
+        tensorrt_version=os.getenv("TRT_VERSION", os.getenv("TENSORRT_VERSION")),
         log_level=configs.log_level,
         models=vars(configs.models),
         defaults=vars(configs.defaults),
     )
-    about['models'].pop('ga_ignore', None)
-    about['models'].pop('rec_ignore', None)
-    about['models'].pop('device', None)
+    about["models"].pop("ga_ignore", None)
+    about["models"].pop("rec_ignore", None)
+    about["models"].pop("device", None)
     return about
 
 
-@app.get('/', include_in_schema=False)
+@app.get("/", include_in_schema=False)
 async def redirect_to_docs():
     return RedirectResponse(url="/docs")
 
@@ -160,7 +188,7 @@ async def custom_swagger_ui_html():
         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
         swagger_js_url="/static/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui.css",
-        swagger_favicon_url='/static/favicon.png'
+        swagger_favicon_url="/static/favicon.png",
     )
 
 

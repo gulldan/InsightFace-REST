@@ -7,6 +7,8 @@ import tensorrt as trt
 TRT_LOGGER = trt.Logger()
 
 # Simple helper data class that's a little nicer to use than a 2-tuple.
+
+
 class HostDeviceMem(object):
     def __init__(self, host_mem, device_mem):
         self.host = host_mem
@@ -18,7 +20,10 @@ class HostDeviceMem(object):
     def __repr__(self):
         return self.__str__()
 
+
 # Allocates all buffers required for an engine, i.e. host/device inputs/outputs.
+
+
 def allocate_buffers(engine):
     inputs = []
     outputs = []
@@ -30,7 +35,7 @@ def allocate_buffers(engine):
     max_batch_size = engine.get_profile_shape(0, 0)[2][0]
     for binding in engine:
         binding_shape = engine.get_binding_shape(binding)
-        #Fix -1 dimension for proper memory allocation for batch_size > 1
+        # Fix -1 dimension for proper memory allocation for batch_size > 1
         if binding_shape[0] == -1:
             binding_shape = (1,) + binding_shape[1:]
         size = trt.volume(binding_shape) * max_batch_size
@@ -46,13 +51,25 @@ def allocate_buffers(engine):
             input_shapes.append(engine.get_binding_shape(binding))
         else:
             outputs.append(HostDeviceMem(host_mem, device_mem))
-            #Collect original output shapes and names from engine
+            # Collect original output shapes and names from engine
             out_shapes.append(engine.get_binding_shape(binding))
             out_names.append(binding)
-    return inputs, outputs, bindings, stream, input_shapes, out_shapes, out_names, max_batch_size
+    return (
+        inputs,
+        outputs,
+        bindings,
+        stream,
+        input_shapes,
+        out_shapes,
+        out_names,
+        max_batch_size,
+    )
+
 
 # This function is generalized for multiple inputs/outputs.
 # inputs and outputs are expected to be lists of HostDeviceMem objects.
+
+
 def do_inference(context, bindings, inputs, outputs, stream):
     # Transfer input data to the GPU.
     [cuda.memcpy_htod_async(inp.device, inp.host, stream) for inp in inputs]
@@ -64,6 +81,7 @@ def do_inference(context, bindings, inputs, outputs, stream):
     stream.synchronize()
     # Return only the host outputs.
     return [out.host for out in outputs]
+
 
 class TrtModel(object):
     def __init__(self, model):
@@ -79,10 +97,18 @@ class TrtModel(object):
         self.max_batch_size = 1
 
     def build(self):
-        with open(self.engine_file, 'rb') as f, trt.Runtime(TRT_LOGGER) as runtime:
+        with open(self.engine_file, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
             self.engine = runtime.deserialize_cuda_engine(f.read())
-        self.inputs, self.outputs, self.bindings, self.stream, self.input_shapes, self.out_shapes, self.out_names, self.max_batch_size = allocate_buffers(
-            self.engine)
+        (
+            self.inputs,
+            self.outputs,
+            self.bindings,
+            self.stream,
+            self.input_shapes,
+            self.out_shapes,
+            self.out_names,
+            self.max_batch_size,
+        ) = allocate_buffers(self.engine)
 
         self.context = self.engine.create_execution_context()
         self.context.active_optimization_profile = 0
@@ -95,16 +121,24 @@ class TrtModel(object):
         input = np.asarray(input)
         batch_size = input.shape[0]
         allocate_place = np.prod(input.shape)
-        self.inputs[0].host[:allocate_place] = input.flatten(order='C').astype(np.float32)
+        self.inputs[0].host[:allocate_place] = input.flatten(order="C").astype(
+            np.float32
+        )
         self.context.set_binding_shape(0, input.shape)
         trt_outputs = do_inference(
-            self.context, bindings=self.bindings,
-            inputs=self.inputs, outputs=self.outputs, stream=self.stream)
-        #Reshape TRT outputs to original shape instead of flattened array
+            self.context,
+            bindings=self.bindings,
+            inputs=self.inputs,
+            outputs=self.outputs,
+            stream=self.stream,
+        )
+        # Reshape TRT outputs to original shape instead of flattened array
         if deflatten:
-            trt_outputs = [output.reshape(shape) for output, shape in zip(trt_outputs, self.out_shapes)]
+            trt_outputs = [
+                output.reshape(shape)
+                for output, shape in zip(trt_outputs, self.out_shapes)
+            ]
         if as_dict:
             return {name: trt_outputs[i] for i, name in enumerate(self.out_names)}
 
         return [trt_output[:batch_size] for trt_output in trt_outputs]
-

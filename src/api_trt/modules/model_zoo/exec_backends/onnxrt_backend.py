@@ -5,14 +5,23 @@ import logging
 
 
 class Arcface:
-    def __init__(self, rec_name='/models/onnx/arcface_r100_v1/arcface_r100_v1.onnx',**kwargs):
+    def __init__(
+        self, rec_name="/models/onnx/arcface_r100_v1/arcface_r100_v1.onnx", **kwargs
+    ):
         self.rec_model = onnxruntime.InferenceSession(rec_name)
         self.outputs = [e.name for e in self.rec_model.get_outputs()]
 
     # warmup
     def prepare(self, **kwargs):
         logging.info("Warming up ArcFace ONNX Runtime engine...")
-        self.rec_model.run(self.outputs, {self.rec_model.get_inputs()[0].name: [np.zeros((3, 112, 112), np.float32)]})
+        self.rec_model.run(
+            self.outputs,
+            {
+                self.rec_model.get_inputs()[0].name: [
+                    np.zeros((3, 112, 112), np.float32)
+                ]
+            },
+        )
 
     def get_embedding(self, face_img):
         if not isinstance(face_img, list):
@@ -24,11 +33,14 @@ class Arcface:
             face_img[i] = img.astype(np.float32)
 
         face_img = np.stack(face_img)
-        net_out = self.rec_model.run(self.outputs, {self.rec_model.get_inputs()[0].name: face_img})
+        net_out = self.rec_model.run(
+            self.outputs, {self.rec_model.get_inputs()[0].name: face_img}
+        )
         return net_out[0]
 
+
 class Cosface:
-    def __init__(self, rec_name='/models/onnx/glintr100/glintr100.onnx',**kwargs):
+    def __init__(self, rec_name="/models/onnx/glintr100/glintr100.onnx", **kwargs):
         self.rec_model = onnxruntime.InferenceSession(rec_name)
         self.input_shape = None
         self.max_batch_size = 1
@@ -39,7 +51,14 @@ class Cosface:
     # warmup
     def prepare(self, **kwargs):
         logging.info("Warming up ArcFace ONNX Runtime engine...")
-        self.rec_model.run(self.outputs, {self.rec_model.get_inputs()[0].name: [np.zeros((3, 112, 112), np.float32)]})
+        self.rec_model.run(
+            self.outputs,
+            {
+                self.rec_model.get_inputs()[0].name: [
+                    np.zeros((3, 112, 112), np.float32)
+                ]
+            },
+        )
 
     def get_embedding(self, face_img):
         if not isinstance(face_img, list):
@@ -47,16 +66,28 @@ class Cosface:
 
         for i, img in enumerate(face_img):
             input_size = tuple(img.shape[0:2][::-1])
-            blob = cv2.dnn.blobFromImage(img, 1.0 / self.input_std, input_size,
-                                         (self.input_mean, self.input_mean, self.input_mean), swapRB=True)[0]
+            blob = cv2.dnn.blobFromImage(
+                img,
+                1.0 / self.input_std,
+                input_size,
+                (self.input_mean, self.input_mean, self.input_mean),
+                swapRB=True,
+            )[0]
             face_img[i] = blob
         face_img = np.stack(face_img)
-        net_out = self.rec_model.run(self.outputs, {self.rec_model.get_inputs()[0].name: face_img})
+        net_out = self.rec_model.run(
+            self.outputs, {self.rec_model.get_inputs()[0].name: face_img}
+        )
         return net_out[0]
 
-class FaceGenderage:
 
-    def __init__(self, rec_name='/models/onnx/genderage_v1/genderage_v1.onnx', outputs=None,**kwargs):
+class FaceGenderage:
+    def __init__(
+        self,
+        rec_name="/models/onnx/genderage_v1/genderage_v1.onnx",
+        outputs=None,
+        **kwargs
+    ):
         self.rec_model = onnxruntime.InferenceSession(rec_name)
         self.input = self.rec_model.get_inputs()[0]
         if outputs is None:
@@ -66,8 +97,14 @@ class FaceGenderage:
     # warmup
     def prepare(self, **kwargs):
         logging.info("Warming up GenderAge ONNX Runtime engine...")
-        self.rec_model.run(self.outputs,
-                           {self.rec_model.get_inputs()[0].name: [np.zeros(tuple(self.input.shape[1:]), np.float32)]})
+        self.rec_model.run(
+            self.outputs,
+            {
+                self.rec_model.get_inputs()[0].name: [
+                    np.zeros(tuple(self.input.shape[1:]), np.float32)
+                ]
+            },
+        )
 
     def get(self, face_img):
         if not isinstance(face_img, list):
@@ -94,9 +131,12 @@ class FaceGenderage:
 
 
 class DetectorInfer:
-
-    def __init__(self, model='/models/onnx/centerface/centerface.onnx',
-                 output_order=None,**kwargs):
+    def __init__(
+        self,
+        model="/models/onnx/centerface/centerface.onnx",
+        output_order=None,
+        **kwargs
+    ):
         self.rec_model = onnxruntime.InferenceSession(model)
         self.input = self.rec_model.get_inputs()[0]
 
@@ -110,8 +150,14 @@ class DetectorInfer:
     # warmup
     def prepare(self, **kwargs):
         logging.info("Warming up face detection ONNX Runtime engine...")
-        self.rec_model.run(self.output_order,
-                           {self.rec_model.get_inputs()[0].name: [np.zeros(tuple(self.input.shape[1:]), np.float32)]})
+        self.rec_model.run(
+            self.output_order,
+            {
+                self.rec_model.get_inputs()[0].name: [
+                    np.zeros(tuple(self.input.shape[1:]), np.float32)
+                ]
+            },
+        )
 
     def run(self, input):
         net_out = self.rec_model.run(self.output_order, {self.input.name: input})

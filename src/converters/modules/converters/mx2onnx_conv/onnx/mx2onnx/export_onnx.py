@@ -55,6 +55,7 @@ from mxnet import ndarray as nd
 
 class MXNetGraph(object):
     """Class to convert MXNet to ONNX graph"""
+
     registry_ = {}
     input_output_maps_ = {}
 
@@ -67,10 +68,12 @@ class MXNetGraph(object):
     @staticmethod
     def register(op_name):
         """Register operators"""
+
         def wrapper(func):
             """Helper function to map functions"""
             try:
                 import onnx as _
+
                 MXNetGraph.registry_[op_name] = func
             except ImportError:
                 pass
@@ -83,7 +86,9 @@ class MXNetGraph(object):
         """Convert MXNet layer to ONNX"""
         op = str(node["op"])
         if op not in MXNetGraph.registry_:
-            raise AttributeError("No conversion function registered for op type %s yet." % op)
+            raise AttributeError(
+                "No conversion function registered for op type %s yet." % op
+            )
         convert_func = MXNetGraph.registry_[op]
         return convert_func(node, **kwargs)
 
@@ -117,7 +122,7 @@ class MXNetGraph(object):
 
     @staticmethod
     def get_outputs(sym, params, in_shape, in_label, verbose=True):
-        """ Infer output shapes and return dictionary of output name to shape
+        """Infer output shapes and return dictionary of output name to shape
 
         :param :class:`~mxnet.symbol.Symbol` sym: symbol to perform infer shape on
         :param dic of (str, nd.NDArray) params:
@@ -131,8 +136,13 @@ class MXNetGraph(object):
         # remove any input listed in params from sym.list_inputs() and bind them to the input shapes provided
         # by user. Also remove in_label, which is the name of the label symbol that may have been used
         # as the label for loss during training.
-        inputs = {n: tuple(s) for n, s in zip([n for n in sym.list_inputs() if n not in params and n != in_label],
-                                              in_shape)}
+        inputs = {
+            n: tuple(s)
+            for n, s in zip(
+                [n for n in sym.list_inputs() if n not in params and n != in_label],
+                in_shape,
+            )
+        }
         # Add params and their shape to list of inputs
         inputs.update({n: v.shape for n, v in params.items() if n in sym.list_inputs()})
         # Provide input data as well as input params to infer_shape()
@@ -140,8 +150,8 @@ class MXNetGraph(object):
 
         out_names = list()
         for name in sym.list_outputs():
-            if name.endswith('_output'):
-                out_names.append(name[:-len('_output')])
+            if name.endswith("_output"):
+                out_names.append(name[: -len("_output")])
             else:
                 if verbose:
                     logging.info("output '%s' does not end with '_output'", name)
@@ -156,8 +166,12 @@ class MXNetGraph(object):
     @staticmethod
     def convert_weights_to_numpy(weights_dict):
         """Convert weights to numpy"""
-        return dict([(k.replace("arg:", "").replace("aux:", ""), v.asnumpy())
-                     for k, v in weights_dict.items()])
+        return dict(
+            [
+                (k.replace("arg:", "").replace("aux:", ""), v.asnumpy())
+                for k, v in weights_dict.items()
+            ]
+        )
 
     def create_onnx_graph_proto(self, sym, params, in_shape, in_type, verbose=False):
         """Convert MXNet graph to ONNX graph
@@ -181,11 +195,13 @@ class MXNetGraph(object):
             ONNX graph
         """
         try:
-            from onnx import (checker, helper, NodeProto, ValueInfoProto, TensorProto)
+            from onnx import checker, helper, NodeProto, ValueInfoProto, TensorProto
             from onnx.helper import make_tensor_value_info
         except ImportError:
-            raise ImportError("Onnx and protobuf need to be installed. "
-                              + "Instructions to install - https://github.com/onnx/onnx")
+            raise ImportError(
+                "Onnx and protobuf need to be installed. "
+                + "Instructions to install - https://github.com/onnx/onnx"
+            )
 
         # When MXNet model is saved to json file , MXNet adds a node for label.
         # The name of this node is, name of the last node + "_label" ( i.e if last node
@@ -207,7 +223,9 @@ class MXNetGraph(object):
 
         # Determine output and internal shapes
         graph_outputs = MXNetGraph.get_outputs(sym, params, in_shape, output_label)
-        graph_shapes = MXNetGraph.get_outputs(sym.get_internals(), params, in_shape, output_label, verbose=False)
+        graph_shapes = MXNetGraph.get_outputs(
+            sym.get_internals(), params, in_shape, output_label, verbose=False
+        )
 
         graph_input_idx = 0
         for idx, node in enumerate(mx_graph):
@@ -235,7 +253,8 @@ class MXNetGraph(object):
                     proc_nodes=all_processed_nodes,
                     graph_shapes=graph_shapes,
                     initializer=initializer,
-                    index_lookup=index_lookup)
+                    index_lookup=index_lookup,
+                )
                 graph_input_idx += 1
 
             else:
@@ -251,7 +270,7 @@ class MXNetGraph(object):
                     graph_shapes=graph_shapes,
                     initializer=initializer,
                     index_lookup=index_lookup,
-                    idx=idx
+                    idx=idx,
                 )
 
             if isinstance(converted, list):
@@ -272,7 +291,7 @@ class MXNetGraph(object):
                                     make_tensor_value_info(
                                         name=nodename,
                                         elem_type=in_type,
-                                        shape=graph_outputs[nodename]
+                                        shape=graph_outputs[nodename],
                                     )
                                 )
                                 if verbose:
@@ -280,7 +299,9 @@ class MXNetGraph(object):
                     elif isinstance(converted_node, TensorProto):
                         raise ValueError("Did not expect TensorProto")
                     else:
-                        raise ValueError("node is of an unrecognized type: %s" % type(node))
+                        raise ValueError(
+                            "node is of an unrecognized type: %s" % type(node)
+                        )
 
                     all_processed_nodes.append(converted_node)
 
@@ -289,13 +310,15 @@ class MXNetGraph(object):
                     # saved to json file,
                     # refer "output_label" initialization above for more details.
                     # if extra node was added then prev_index to the last node is adjusted.
-                    if idx == (len(mx_graph) - 1) and \
-                            mx_graph[len(mx_graph)-2]["name"] == output_label:
+                    if (
+                        idx == (len(mx_graph) - 1)
+                        and mx_graph[len(mx_graph) - 2]["name"] == output_label
+                    ):
                         prev_index = index_lookup[idx - 2]
                     else:
                         prev_index = index_lookup[idx - 1]
 
-                    index_lookup.append(prev_index+len(converted))
+                    index_lookup.append(prev_index + len(converted))
                 else:
                     index_lookup.append(len(converted) - 1)
             else:
@@ -305,7 +328,7 @@ class MXNetGraph(object):
             onnx_processed_nodes,
             "mxnet_converted_model",
             onnx_processed_inputs,
-            onnx_processed_outputs
+            onnx_processed_outputs,
         )
 
         graph.initializer.extend(initializer)

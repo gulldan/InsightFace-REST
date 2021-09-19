@@ -2,7 +2,7 @@
 # @Organization  : insightface.ai
 # @Author        : Jia Guo
 # @Time          : 2021-05-04
-# @Function      : 
+# @Function      :
 
 # Modified for InsightFace-REST
 
@@ -62,14 +62,15 @@ def distance2kps(points, distance, max_shape=None):
     """
     preds = []
     for i in range(0, distance.shape[1], 2):
-        px = points[:, i%2] + distance[:, i]
-        py = points[:, i%2+1] + distance[:, i+1]
+        px = points[:, i % 2] + distance[:, i]
+        py = points[:, i % 2 + 1] + distance[:, i + 1]
         if max_shape is not None:
             px = px.clamp(min=0, max=max_shape[1])
             py = py.clamp(min=0, max=max_shape[0])
         preds.append(px)
         preds.append(py)
     return np.stack(preds, axis=-1)
+
 
 class SCRFD:
     def __init__(self, inference_backend: Union[DIT, DIO]):
@@ -100,7 +101,7 @@ class SCRFD:
         #     self.fmc = 3
         #     self._feat_stride_fpn = [8, 16, 32]
         #     self._num_anchors = 2
-        #elif len(outputs)==9:
+        # elif len(outputs)==9:
         self.fmc = 3
         self._feat_stride_fpn = [8, 16, 32]
         self._num_anchors = 2
@@ -120,27 +121,28 @@ class SCRFD:
         self.session.prepare()
         self.input_shape = self.session.input_shape
 
-
     def forward(self, img, threshold):
         scores_list = []
         bboxes_list = []
         kpss_list = []
         input_size = tuple(img.shape[0:2][::-1])
-        blob = cv2.dnn.blobFromImage(img, 1.0/128, input_size, (127.5, 127.5, 127.5), swapRB=True)
+        blob = cv2.dnn.blobFromImage(
+            img, 1.0 / 128, input_size, (127.5, 127.5, 127.5), swapRB=True
+        )
         t0 = time.time()
         net_outs = self.session.run(blob)
         t1 = time.time()
-        print('inference cost:', (t1 - t0))
+        print("inference cost:", (t1 - t0))
 
         input_height = blob.shape[2]
         input_width = blob.shape[3]
         fmc = self.fmc
         for idx, stride in enumerate(self._feat_stride_fpn):
             scores = net_outs[idx]
-            bbox_preds = net_outs[idx+fmc]
+            bbox_preds = net_outs[idx + fmc]
             bbox_preds = bbox_preds * stride
             if self.use_kps:
-                kps_preds = net_outs[idx+fmc*2] * stride
+                kps_preds = net_outs[idx + fmc * 2] * stride
             height = input_height // stride
             width = input_width // stride
             K = height * width
@@ -148,14 +150,18 @@ class SCRFD:
             if key in self.center_cache:
                 anchor_centers = self.center_cache[key]
             else:
-                anchor_centers = np.stack(np.mgrid[:height, :width][::-1], axis=-1).astype(np.float32)
-                anchor_centers = (anchor_centers * stride).reshape( (-1, 2) )
-                if self._num_anchors>1:
-                    anchor_centers = np.stack([anchor_centers]*self._num_anchors, axis=1).reshape( (-1,2) )
-                if len(self.center_cache)<100:
+                anchor_centers = np.stack(
+                    np.mgrid[:height, :width][::-1], axis=-1
+                ).astype(np.float32)
+                anchor_centers = (anchor_centers * stride).reshape((-1, 2))
+                if self._num_anchors > 1:
+                    anchor_centers = np.stack(
+                        [anchor_centers] * self._num_anchors, axis=1
+                    ).reshape((-1, 2))
+                if len(self.center_cache) < 100:
                     self.center_cache[key] = anchor_centers
 
-            pos_inds = np.where(scores>=threshold)[0]
+            pos_inds = np.where(scores >= threshold)[0]
             bboxes = distance2bbox(anchor_centers, bbox_preds)
             pos_scores = scores[pos_inds]
             pos_bboxes = bboxes[pos_inds]
@@ -163,12 +169,12 @@ class SCRFD:
             bboxes_list.append(pos_bboxes)
             if self.use_kps:
                 kpss = distance2kps(anchor_centers, kps_preds)
-                kpss = kpss.reshape( (kpss.shape[0], -1, 2) )
+                kpss = kpss.reshape((kpss.shape[0], -1, 2))
                 pos_kpss = kpss[pos_inds]
                 kpss_list.append(pos_kpss)
         return scores_list, bboxes_list, kpss_list
 
-    def detect(self, img, threshold=0.5, max_num=0, metric='default'):
+    def detect(self, img, threshold=0.5, max_num=0, metric="default"):
 
         scores_list, bboxes_list, kpss_list = self.forward(img, threshold)
 
@@ -188,25 +194,28 @@ class SCRFD:
         else:
             kpss = None
         if max_num > 0 and det.shape[0] > max_num:
-            area = (det[:, 2] - det[:, 0]) * (det[:, 3] -
-                                              det[:, 1])
+            area = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
 
-            if metric == 'max':
+            if metric == "max":
                 values = area
             else:
                 img_center = img.shape[0] // 2, img.shape[1] // 2
-                offsets = np.vstack([
-                    (det[:, 0] + det[:, 2]) / 2 - img_center[1],
-                    (det[:, 1] + det[:, 3]) / 2 - img_center[0]
-                ])
+                offsets = np.vstack(
+                    [
+                        (det[:, 0] + det[:, 2]) / 2 - img_center[1],
+                        (det[:, 1] + det[:, 3]) / 2 - img_center[0],
+                    ]
+                )
                 offset_dist_squared = np.sum(np.power(offsets, 2.0), 0)
-                values = area - offset_dist_squared * 2.0  # some extra weight on the centering
+                values = (
+                    area - offset_dist_squared * 2.0
+                )  # some extra weight on the centering
 
-            bindex = np.argsort(values)[::-1]  # some extra weight on the centering
+            # some extra weight on the centering
+            bindex = np.argsort(values)[::-1]
             bindex = bindex[0:max_num]
             det = det[bindex, :]
             if kpss is not None:
                 kpss = kpss[bindex, :]
 
         return det, kpss
-

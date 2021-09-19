@@ -14,6 +14,7 @@ try:
 except:
     DIT = None
 
+
 def _whctrs(anchor):
     """
     Return width, height, x center, and y center for an anchor (window).
@@ -34,10 +35,14 @@ def _mkanchors(ws, hs, x_ctr, y_ctr):
 
     ws = ws[:, np.newaxis]
     hs = hs[:, np.newaxis]
-    anchors = np.hstack((x_ctr - 0.5 * (ws - 1),
-                         y_ctr - 0.5 * (hs - 1),
-                         x_ctr + 0.5 * (ws - 1),
-                         y_ctr + 0.5 * (hs - 1)))
+    anchors = np.hstack(
+        (
+            x_ctr - 0.5 * (ws - 1),
+            y_ctr - 0.5 * (hs - 1),
+            x_ctr + 0.5 * (ws - 1),
+            y_ctr + 0.5 * (hs - 1),
+        )
+    )
     return anchors
 
 
@@ -97,8 +102,9 @@ def anchors_plane(height, width, stride, base_anchors):
 
 
 # @jit()
-def generate_anchors(base_size=16, ratios=[0.5, 1, 2],
-                     scales=2 ** np.arange(3, 6), stride=16):
+def generate_anchors(
+    base_size=16, ratios=[0.5, 1, 2], scales=2 ** np.arange(3, 6), stride=16
+):
     """
     Generate anchor (reference) windows by enumerating aspect ratios X
     scales wrt a reference (0, 0, 15, 15) window.
@@ -106,8 +112,12 @@ def generate_anchors(base_size=16, ratios=[0.5, 1, 2],
 
     base_anchor = np.array([1, 1, base_size, base_size]) - 1
     ratio_anchors = _ratio_enum(base_anchor, ratios)
-    anchors = np.vstack([_scale_enum(ratio_anchors[i, :], scales)
-                         for i in range(ratio_anchors.shape[0])])
+    anchors = np.vstack(
+        [
+            _scale_enum(ratio_anchors[i, :], scales)
+            for i in range(ratio_anchors.shape[0])
+        ]
+    )
     return anchors
 
 
@@ -124,9 +134,9 @@ def generate_anchors_fpn(cfg):
     anchors = []
     for k in RPN_FEAT_STRIDE:
         v = cfg[str(k)]
-        bs = v['BASE_SIZE']
-        __ratios = np.array(v['RATIOS'])
-        __scales = np.array(v['SCALES'])
+        bs = v["BASE_SIZE"]
+        __ratios = np.array(v["RATIOS"])
+        __scales = np.array(v["SCALES"])
         stride = int(k)
         # print('anchors_fpn', bs, __ratios, __scales, file=sys.stderr)
         r = generate_anchors(bs, __ratios, __scales, stride)
@@ -211,9 +221,15 @@ def landmark_pred(boxes, landmark_deltas):
 
 
 class RetinaFace:
-    def __init__(self, inference_backend: Union[DIO, DIT], rac='net3l', masks: bool =False, **kwargs):
+    def __init__(
+        self,
+        inference_backend: Union[DIO, DIT],
+        rac="net3l",
+        masks: bool = False,
+        **kwargs,
+    ):
         self.rac = rac
-        self.masks=masks
+        self.masks = masks
         self.model = inference_backend
         self.input_shape = (1, 3, 480, 640)
 
@@ -223,37 +239,59 @@ class RetinaFace:
         self.nms_threshold = nms
         self.landmark_std = 1.0
 
-        _ratio = (1.,)
+        _ratio = (1.0,)
         fmc = 3
-        if self.rac == 'net3':
-            _ratio = (1.,)
-        elif self.rac == 'net3l':
-            _ratio = (1.,)
+        if self.rac == "net3":
+            _ratio = (1.0,)
+        elif self.rac == "net3l":
+            _ratio = (1.0,)
             self.landmark_std = 0.2
         else:
-            assert False, 'rac setting error %s' % self.rac
+            assert False, "rac setting error %s" % self.rac
 
         if fmc == 3:
             self._feat_stride_fpn = [32, 16, 8]
             self.anchor_cfg = {
-                '32': {'SCALES': (32, 16), 'BASE_SIZE': 16, 'RATIOS': _ratio, 'ALLOWED_BORDER': 9999},
-                '16': {'SCALES': (8, 4), 'BASE_SIZE': 16, 'RATIOS': _ratio, 'ALLOWED_BORDER': 9999},
-                '8': {'SCALES': (2, 1), 'BASE_SIZE': 16, 'RATIOS': _ratio, 'ALLOWED_BORDER': 9999},
+                "32": {
+                    "SCALES": (32, 16),
+                    "BASE_SIZE": 16,
+                    "RATIOS": _ratio,
+                    "ALLOWED_BORDER": 9999,
+                },
+                "16": {
+                    "SCALES": (8, 4),
+                    "BASE_SIZE": 16,
+                    "RATIOS": _ratio,
+                    "ALLOWED_BORDER": 9999,
+                },
+                "8": {
+                    "SCALES": (2, 1),
+                    "BASE_SIZE": 16,
+                    "RATIOS": _ratio,
+                    "ALLOWED_BORDER": 9999,
+                },
             }
 
         self.use_landmarks = True
         self.fpn_keys = []
 
         for s in self._feat_stride_fpn:
-            self.fpn_keys.append('stride%s' % s)
+            self.fpn_keys.append("stride%s" % s)
 
-        self._anchors_fpn = dict(zip(self.fpn_keys, generate_anchors_fpn(cfg=self.anchor_cfg)))
+        self._anchors_fpn = dict(
+            zip(self.fpn_keys, generate_anchors_fpn(cfg=self.anchor_cfg))
+        )
         for k in self._anchors_fpn:
             v = self._anchors_fpn[k].astype(np.float32)
             self._anchors_fpn[k] = v
         self.anchor_plane_cache = {}
 
-        self._num_anchors = dict(zip(self.fpn_keys, [anchors.shape[0] for anchors in self._anchors_fpn.values()]))
+        self._num_anchors = dict(
+            zip(
+                self.fpn_keys,
+                [anchors.shape[0] for anchors in self._anchors_fpn.values()],
+            )
+        )
 
     def detect(self, im: np.ndarray, threshold: float = 0.6):
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
@@ -272,7 +310,7 @@ class RetinaFace:
         landmarks_list = []
         t0 = time.time()
         for _idx, s in enumerate(self._feat_stride_fpn):
-            _key = 'stride%s' % s
+            _key = "stride%s" % s
             stride = int(s)
             if self.use_landmarks:
                 idx = _idx * 3
@@ -281,7 +319,7 @@ class RetinaFace:
             if self.masks:
                 idx = _idx * 4
 
-            A = self._num_anchors['stride%s' % s]
+            A = self._num_anchors["stride%s" % s]
 
             scores = net_out[idx]
             scores = scores[:, A:, :, :]
@@ -295,7 +333,7 @@ class RetinaFace:
                 anchors = self.anchor_plane_cache[key]
             else:
 
-                anchors_fpn = self._anchors_fpn['stride%s' % s]
+                anchors_fpn = self._anchors_fpn["stride%s" % s]
                 anchors = anchors_plane(height, width, stride, anchors_fpn)
                 anchors = anchors.reshape((K * A, 4))
                 if len(self.anchor_plane_cache) < 100:
@@ -321,8 +359,8 @@ class RetinaFace:
 
             if self.masks:
                 type_scores = net_out[idx + 2]
-                mask_scores = type_scores[:, A*2:, :, :]
-                mask_scores = clip_pad(mask_scores,(height, width))
+                mask_scores = type_scores[:, A * 2 :, :, :]
+                mask_scores = clip_pad(mask_scores, (height, width))
                 mask_scores = mask_scores.transpose((0, 2, 3, 1)).reshape((-1, 1))
                 mask_scores = mask_scores[order]
                 mask_scores_list.append(mask_scores)
@@ -332,7 +370,9 @@ class RetinaFace:
                 landmark_deltas = net_out[idx]
                 landmark_deltas = clip_pad(landmark_deltas, (height, width))
                 landmark_pred_len = landmark_deltas.shape[1] // A
-                landmark_deltas = landmark_deltas.transpose((0, 2, 3, 1)).reshape((-1, 5, landmark_pred_len // 5))
+                landmark_deltas = landmark_deltas.transpose((0, 2, 3, 1)).reshape(
+                    (-1, 5, landmark_pred_len // 5)
+                )
                 landmark_deltas *= self.landmark_std
                 landmarks = landmark_pred(anchors, landmark_deltas)
                 landmarks = landmarks[order, :]
@@ -358,9 +398,13 @@ class RetinaFace:
         if self.masks:
             mask_scores = np.vstack(mask_scores_list)
             mask_scores = mask_scores[order]
-            pre_det = np.hstack((proposals[:, 0:4], scores, mask_scores)).astype(np.float32, copy=False)
+            pre_det = np.hstack((proposals[:, 0:4], scores, mask_scores)).astype(
+                np.float32, copy=False
+            )
         else:
-            pre_det = np.hstack((proposals[:, 0:4], scores)).astype(np.float32, copy=False)
+            pre_det = np.hstack((proposals[:, 0:4], scores)).astype(
+                np.float32, copy=False
+            )
         keep = nms(pre_det, thresh=self.nms_threshold)
         det = np.hstack((pre_det, proposals[:, 4:]))
         det = det[keep, :]

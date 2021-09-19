@@ -13,7 +13,6 @@ except:
     DIT = None
 
 
-
 class CenterFace(object):
     def __init__(self, inference_backend: Union[DIT, DIO], landmarks=True):
         self.landmarks = landmarks
@@ -31,7 +30,9 @@ class CenterFace(object):
 
     def detect(self, img: np.ndarray, threshold: float = 0.4):
         h, w = img.shape[:2]
-        blob = np.expand_dims(img[:, :, (2, 1, 0)].transpose(2, 0, 1), axis=0).astype("float32")
+        blob = np.expand_dims(img[:, :, (2, 1, 0)].transpose(2, 0, 1), axis=0).astype(
+            "float32"
+        )
         t0 = time.time()
         heatmap, scale, offset, lms = self.net.run(blob)
         t1 = time.time()
@@ -41,7 +42,9 @@ class CenterFace(object):
     def postprocess(self, heatmap, lms, offset, scale, size, threshold):
         t0 = time.time()
         if self.landmarks:
-            dets, lms = self.decode(heatmap, scale, offset, lms, size, threshold=threshold)
+            dets, lms = self.decode(
+                heatmap, scale, offset, lms, size, threshold=threshold
+            )
         else:
             dets = self.decode(heatmap, scale, offset, None, size, threshold=threshold)
         if len(dets) > 0:
@@ -71,10 +74,15 @@ class CenterFace(object):
             boxes = []
         if len(c0) > 0:
             for i in range(len(c0)):
-                s0, s1 = np.exp(scale0[c0[i], c1[i]]) * 4, np.exp(scale1[c0[i], c1[i]]) * 4
+                s0, s1 = (
+                    np.exp(scale0[c0[i], c1[i]]) * 4,
+                    np.exp(scale1[c0[i], c1[i]]) * 4,
+                )
                 o0, o1 = offset0[c0[i], c1[i]], offset1[c0[i], c1[i]]
                 s = heatmap[c0[i], c1[i]]
-                x1, y1 = max(0, (c1[i] + o1 + 0.5) * 4 - s1 / 2), max(0, (c0[i] + o0 + 0.5) * 4 - s0 / 2)
+                x1, y1 = max(0, (c1[i] + o1 + 0.5) * 4 - s1 / 2), max(
+                    0, (c0[i] + o0 + 0.5) * 4 - s0 / 2
+                )
                 x1, y1 = min(x1, size[1]), min(y1, size[0])
                 boxes.append([x1, y1, min(x1 + s1, size[1]), min(y1 + s0, size[0]), s])
                 if self.landmarks:

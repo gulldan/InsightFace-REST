@@ -46,13 +46,15 @@ def load_module(sym_filepath, params_filepath):
     try:
         # reads symbol.json file from given path and
         # retrieves model prefix and number of epochs
-        model_name = sym_filepath.rsplit('.', 1)[0].rsplit('-', 1)[0]
-        params_file_list = params_filepath.rsplit('.', 1)[0].rsplit('-', 1)
+        model_name = sym_filepath.rsplit(".", 1)[0].rsplit("-", 1)[0]
+        params_file_list = params_filepath.rsplit(".", 1)[0].rsplit("-", 1)
         # Setting num_epochs to 0 if not present in filename
         num_epochs = 0 if len(params_file_list) == 1 else int(params_file_list[1])
     except IndexError:
-        logging.info("Model and params name should be in format: "
-                     "prefix-symbol.json, prefix-epoch.params")
+        logging.info(
+            "Model and params name should be in format: "
+            "prefix-symbol.json, prefix-epoch.params"
+        )
         raise
 
     sym, arg_params, aux_params = mx.model.load_checkpoint(model_name, num_epochs)

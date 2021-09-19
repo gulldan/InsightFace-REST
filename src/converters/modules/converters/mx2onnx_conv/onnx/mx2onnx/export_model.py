@@ -16,7 +16,7 @@
 # under the License.
 
 # coding: utf-8
-#pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-arguments
 
 """Exports an MXNet model to the ONNX model format"""
 import logging
@@ -28,8 +28,14 @@ from .export_onnx import MXNetGraph
 from ._export_helper import load_module
 
 
-def export_model(sym, params, input_shape, input_type=np.float32,
-                 onnx_file_path='model.onnx', verbose=False):
+def export_model(
+    sym,
+    params,
+    input_shape,
+    input_type=np.float32,
+    onnx_file_path="model.onnx",
+    verbose=False,
+):
     """Exports the MXNet model file, passed as a parameter, into ONNX model.
     Accepts both symbol,parameter objects as well as json and params filepaths as input.
     Operator support and coverage -
@@ -64,8 +70,10 @@ def export_model(sym, params, input_shape, input_type=np.float32,
     try:
         from onnx import helper, mapping
     except ImportError:
-        raise ImportError("Onnx and protobuf need to be installed. "
-                          + "Instructions to install - https://github.com/onnx/onnx")
+        raise ImportError(
+            "Onnx and protobuf need to be installed. "
+            + "Instructions to install - https://github.com/onnx/onnx"
+        )
 
     converter = MXNetGraph()
 
@@ -74,13 +82,21 @@ def export_model(sym, params, input_shape, input_type=np.float32,
     if isinstance(sym, string_types) and isinstance(params, string_types):
         logging.info("Converting json and weight file to sym and params")
         sym_obj, params_obj = load_module(sym, params)
-        onnx_graph = converter.create_onnx_graph_proto(sym_obj, params_obj, input_shape,
-                                                       mapping.NP_TYPE_TO_TENSOR_TYPE[data_format],
-                                                       verbose=verbose)
+        onnx_graph = converter.create_onnx_graph_proto(
+            sym_obj,
+            params_obj,
+            input_shape,
+            mapping.NP_TYPE_TO_TENSOR_TYPE[data_format],
+            verbose=verbose,
+        )
     elif isinstance(sym, symbol.Symbol) and isinstance(params, dict):
-        onnx_graph = converter.create_onnx_graph_proto(sym, params, input_shape,
-                                                       mapping.NP_TYPE_TO_TENSOR_TYPE[data_format],
-                                                       verbose=verbose)
+        onnx_graph = converter.create_onnx_graph_proto(
+            sym,
+            params,
+            input_shape,
+            mapping.NP_TYPE_TO_TENSOR_TYPE[data_format],
+            verbose=verbose,
+        )
     else:
         raise ValueError("Input sym and params should either be files or objects")
 

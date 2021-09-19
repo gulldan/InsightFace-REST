@@ -5,7 +5,9 @@ from .detectors.scrfd import SCRFD
 
 
 def get_retinaface(model_path, backend, outputs, rac, masks=False, **kwargs):
-    inference_backend = backend.DetectorInfer(model=model_path, output_order=outputs, **kwargs)
+    inference_backend = backend.DetectorInfer(
+        model=model_path, output_order=outputs, **kwargs
+    )
     model = RetinaFace(inference_backend=inference_backend, rac=rac, masks=masks)
     return model
 
@@ -26,23 +28,31 @@ def retinaface_mnet025_v2(model_path, backend, outputs, **kwargs):
 
 
 def mnet_cov2(model_path, backend, outputs, **kwargs):
-    model = get_retinaface(model_path, backend, outputs, rac="net3l", masks=True, **kwargs)
+    model = get_retinaface(
+        model_path, backend, outputs, rac="net3l", masks=True, **kwargs
+    )
     return model
 
 
 def centerface(model_path, backend, outputs, **kwargs):
-    inference_backend = backend.DetectorInfer(model=model_path, output_order=outputs, **kwargs)
+    inference_backend = backend.DetectorInfer(
+        model=model_path, output_order=outputs, **kwargs
+    )
     model = CenterFace(inference_backend=inference_backend)
     return model
 
 
 def dbface(model_path, backend, outputs, **kwargs):
-    inference_backend = backend.DetectorInfer(model=model_path, output_order=outputs, **kwargs)
+    inference_backend = backend.DetectorInfer(
+        model=model_path, output_order=outputs, **kwargs
+    )
     model = DBFace(inference_backend=inference_backend)
     return model
 
 
 def scrfd(model_path, backend, outputs, **kwargs):
-    inference_backend = backend.DetectorInfer(model=model_path, output_order=outputs, **kwargs)
+    inference_backend = backend.DetectorInfer(
+        model=model_path, output_order=outputs, **kwargs
+    )
     model = SCRFD(inference_backend=inference_backend)
     return model

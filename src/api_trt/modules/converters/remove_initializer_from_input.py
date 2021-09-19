@@ -1,12 +1,13 @@
 import onnx
 import argparse
 
+
 def remove_initializer_from_input(input, output):
 
     model = onnx.load(input)
     if model.ir_version < 4:
         print(
-            'Model with ir_version below 4 requires to include initilizer in graph input'
+            "Model with ir_version below 4 requires to include initilizer in graph input"
         )
         return
 

@@ -1,8 +1,9 @@
 import numpy as np
 from numba import njit
 
+
 @njit()
-def nms(dets, thresh = 0.4):
+def nms(dets, thresh=0.4):
     x1 = dets[:, 0]
     y1 = dets[:, 1]
     x2 = dets[:, 2]
