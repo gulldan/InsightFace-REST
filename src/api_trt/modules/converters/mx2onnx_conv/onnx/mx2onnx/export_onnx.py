@@ -138,7 +138,7 @@ class MXNetGraph(object):
         # Provide input data as well as input params to infer_shape()
         _, out_shapes, _ = sym.infer_shape(**inputs)
 
-        out_names = list()
+        out_names = []
         for name in sym.list_outputs():
             if name.endswith('_output'):
                 out_names.append(name[:-len('_output')])
