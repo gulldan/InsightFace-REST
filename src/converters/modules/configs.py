@@ -158,7 +158,8 @@ class Configs(object):
             plan=self.trt_engines_dir
         )
 
-    def __get_param(self, ENV, default=None):
+    @staticmethod
+    def __get_param(ENV, default=None):
         return os.environ.get(ENV, default)
 
     def get_mxnet_model_paths(self, model_name):
@@ -166,7 +167,8 @@ class Configs(object):
         param_path = os.path.join(self.mxnet_models_dir, model_name, self.mxnet_models[model_name].get('params', ''))
         return symbol_path, param_path
 
-    def in_official_package(self, model_name):
+    @staticmethod
+    def in_official_package(model_name):
         return mxnet_models[model_name]['in_package']
 
     def build_model_paths(self, model_name: str, ext: str):

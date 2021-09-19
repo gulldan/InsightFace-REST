@@ -112,12 +112,14 @@ class Serializer:
         else:
             return self._serializer_v2
 
-    def _serializer_v1(self, data):
+    @staticmethod
+    def _serializer_v1(data):
         data = data.get('data', [])
         resp = [img.get('faces') for img in data]
         return resp
 
-    def _serializer_v2(self, data):
+    @staticmethod
+    def _serializer_v2(data):
 
         # Response data is by default in v2 format
         return data
@@ -182,7 +184,8 @@ class Processing:
                                   backend_name=backend_name, force_fp16=force_fp16, triton_uri=triton_uri
                                   )
 
-    def __iterate_faces(self, crops):
+    @staticmethod
+    def __iterate_faces(crops):
         for face in crops:
             if face.get('traceback') is None:
                 face = Face(facedata=face.get('data'))

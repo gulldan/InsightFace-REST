@@ -140,7 +140,8 @@ class FaceAnalysis:
         else:
             self.ga_model = None
 
-    def sort_boxes(self, boxes, probs, landmarks, mask_probs, shape, max_num=0):
+    @staticmethod
+    def sort_boxes(boxes, probs, landmarks, mask_probs, shape, max_num=0):
         # Based on original InsightFace python package implementation
         if max_num > 0 and boxes.shape[0] > max_num:
             area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
@@ -167,7 +168,8 @@ class FaceAnalysis:
         return boxes, probs, landmarks, mask_probs
 
     # Translate bboxes and landmarks from resized to original image size
-    def reproject_points(self, dets, scale: float):
+    @staticmethod
+    def reproject_points(dets, scale: float):
         if scale != 1.0:
             dets = dets / scale
         return dets

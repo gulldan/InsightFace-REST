@@ -229,7 +229,8 @@ class Configs(object):
             plan=self.trt_engines_dir
         )
 
-    def __get_param(self, ENV, default=None):
+    @staticmethod
+    def __get_param(ENV, default=None):
         return os.environ.get(ENV, default)
 
     def build_model_paths(self, model_name: str, ext: str):
